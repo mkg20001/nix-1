@@ -240,6 +240,17 @@ struct ExprLambda : Expr
     COMMON_METHODS
 };
 
+struct ExprCall : Expr
+{
+    Expr * fun;
+    std::vector<Expr *> args;
+    Pos pos;
+    ExprCall(const Pos & pos, Expr * fun, std::vector<Expr *> && args)
+        : fun(fun), args(args), pos(pos)
+    { }
+    COMMON_METHODS
+};
+
 struct ExprLet : Expr
 {
     ExprAttrs * attrs;
@@ -297,7 +308,6 @@ struct ExprOpNot : Expr
         void eval(EvalState & state, Env & env, Value & v); \
     };
 
-MakeBinOp(ExprApp, "")
 MakeBinOp(ExprOpEq, "==")
 MakeBinOp(ExprOpNEq, "!=")
 MakeBinOp(ExprOpAnd, "&&")
