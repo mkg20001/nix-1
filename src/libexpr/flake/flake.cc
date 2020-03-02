@@ -751,11 +751,8 @@ void callFlake(EvalState & state,
             "outputsFun: inputs: sourceInfo: let outputs = outputsFun inputs; in "
             "outputs // sourceInfo // { inherit inputs; inherit outputs; inherit sourceInfo; }", "/"), vCall);
 
-    auto vCall2 = *state.allocValue();
-    auto vCall3 = *state.allocValue();
-    state.callFunction(vCall, *flake.vOutputs, vCall2, noPos);
-    state.callFunction(vCall2, vInputs, vCall3, noPos);
-    state.callFunction(vCall3, vSourceInfo, vRes, noPos);
+    Value * vArgs[]{flake.vOutputs, &vInputs, &vSourceInfo};
+    state.callFunction(vCall, 3, vArgs, vRes, noPos);
 
     vResFinal = vRes;
 }
