@@ -1308,19 +1308,19 @@ bool hasSuffix(std::string_view s, std::string_view suffix)
         && s.substr(s.size() - suffix.size()) == suffix;
 }
 
-template<typename Out>
-void split(const std::string &s, char delim, Out result) {
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        *(result++) = item;
+std::vector<std::string> split(const std::string& value,
+                               char separator)
+{
+    std::vector<std::string> result;
+    std::string::size_type p = 0;
+    std::string::size_type q;
+    while ((q = value.find(separator, p)) != std::string::npos)
+    {
+        result.emplace_back(value, p, q - p);
+        p = q + 1;
     }
-}
-
-std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, std::back_inserter(elems));
-    return elems;
+    result.emplace_back(value, p);
+    return result;
 }
 
 std::string toLower(const std::string & s)

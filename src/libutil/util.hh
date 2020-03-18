@@ -410,7 +410,8 @@ bool hasPrefix(const string & s, const string & prefix);
 bool hasSuffix(std::string_view s, std::string_view suffix);
 
 /* Returns a vector with the result of the split */
-std::vector<std::string> split(const std::string &s, char delim);
+std::vector<std::string> split(const std::string& value,
+                               char separator);
 
 /* Convert a string to lower case. */
 std::string toLower(const std::string & s);
