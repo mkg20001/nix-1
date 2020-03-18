@@ -13,6 +13,8 @@ SSHMaster::SSHMaster(const std::string & hostNport, const std::string & keyFile,
     auto res = split(hostNport, *":");
     port = res.size() > 0 ? atoi(res[1].c_str()) : 0;
     host = res[0];
+    // help: is this above already using the actual value or is it broken without this
+    fakeSSH = host == "localhost";
 
     if (host == "" || hasPrefix(host, "-"))
         throw Error("invalid SSH host name '%s'", host);
