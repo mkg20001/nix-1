@@ -1323,6 +1323,22 @@ std::vector<std::string> split(const std::string& value,
     return result;
 }
 
+std::string join(const std::vector<std::string> strings,
+                        const char* delim)
+{
+    std::ostringstream imploded;
+    std::copy(strings.begin(), strings.end(),
+               std::ostream_iterator<std::string>(imploded, delim));
+    std::string res = imploded.str();
+    res.erase(res.size() - 1);
+    return res;
+}
+
+/*std::vector<std::string> strings;
+
+const char* const delim = ", ";*/
+
+
 std::string toLower(const std::string & s)
 {
     std::string r(s);

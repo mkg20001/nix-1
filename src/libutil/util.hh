@@ -413,6 +413,10 @@ bool hasSuffix(std::string_view s, std::string_view suffix);
 std::vector<std::string> split(const std::string& value,
                                char separator);
 
+/* Returns a stream with the joined string */
+std::string join(const std::vector<std::string> strings,
+                        const char* delim);
+
 /* Convert a string to lower case. */
 std::string toLower(const std::string & s);
 
