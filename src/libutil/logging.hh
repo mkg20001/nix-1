@@ -216,5 +216,6 @@ inline void warn(const std::string & fs, const Args & ... args)
 void warnOnce(bool & haveWarned, const FormatOrString & fs);
 
 void writeToStderr(const string & s);
+void writeToAlien(const string & s);
 
 }

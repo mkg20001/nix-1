@@ -8,6 +8,7 @@
 #include <map>
 #include <thread>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 namespace nix {
 
@@ -88,13 +89,14 @@ public:
         : printBuildLogs(printBuildLogs)
         , isTTY(isTTY)
     {
-        state_.lock()->active = isTTY;
+        state_.lock()->active = true;
         updateThread = std::thread([&]() {
             auto state(state_.lock());
             while (state->active) {
                 if (!state->haveUpdate)
                     state.wait(updateCV);
                 draw(*state);
+                dumpState(*state);
                 state.wait_for(quitCV, std::chrono::milliseconds(50));
             }
         });
@@ -139,6 +141,10 @@ public:
     void log(State & state, Verbosity lvl, const std::string & s)
     {
         if (state.active) {
+            dumpState(state);
+        }
+
+        if (state.active && isTTY) {
             writeToStderr("\r\e[K" + filterANSIEscapes(s, !isTTY) + ANSI_NORMAL "\n");
             draw(state);
         } else {
@@ -324,10 +330,46 @@ public:
         updateCV.notify_one();
     }
 
+    void dumpState(State & state)
+    {
+        state.haveUpdate = false;
+        if (!state.active || !std::getenv("DUMP_JSON")) return;
+
+        auto s = nlohmann::json::object();
+
+        s["status"] = getStatusJSON(state);
+
+        s["activities"] = nlohmann::json::array();
+
+        auto I = 0;
+
+        if (!state.activities.empty()) {
+            auto i = state.activities.rbegin();
+
+            while (i != state.activities.rend() && (!i->visible || (i->s.empty() && i->lastLine.empty())))
+                ++i;
+
+            if (i != state.activities.rend()) {
+                auto act = nlohmann::json::object();
+                s["activites"][I] = act;
+                I++;
+                act["s"] = i->s;
+                if (!i->phase.empty()) {
+                    act["phase"] = i->phase;
+                }
+                if (!i->lastLine.empty()) {
+                    act["lastLine"] = i->lastLine;
+                }
+            }
+        }
+
+        writeToAlien(s.dump());
+    }
+
     void draw(State & state)
     {
         state.haveUpdate = false;
-        if (!state.active) return;
+        if (!state.active || !isTTY) return;
 
         std::string line;
 
@@ -363,6 +405,50 @@ public:
         if (width <= 0) width = std::numeric_limits<decltype(width)>::max();
 
         writeToStderr("\r" + filterANSIEscapes(line, false, width) + ANSI_NORMAL + "\e[K");
+    }
+
+    nlohmann::json getStatusJSON(State & state) {
+        auto status = nlohmann::json::object();
+
+        auto MiB = 1024.0 * 1024.0;
+
+        auto renderActivity = [&](ActivityType type, const std::string & key, const std::string & itemFmt, const std::string & numberFmt = "%d", double unit = 1) {
+            auto & act = state.activitiesByType[type];
+            uint64_t done = act.done, expected = act.done, running = 0, failed = act.failed;
+            for (auto & j : act.its) {
+                done += j.second->done;
+                expected += j.second->expected;
+                running += j.second->running;
+                failed += j.second->failed;
+            }
+
+            expected = std::max(expected, act.expected);
+
+            status[key] = nlohmann::json::object();
+
+            status[key]["unit"] = unit;
+            status[key]["running"] = running;
+            status[key]["done"] = done;
+            status[key]["expected"] = expected;
+            status[key]["failed"] = failed;
+
+            status[key]["itemFmt"] = itemFmt;
+            status[key]["numberFmt"] = numberFmt;
+        };
+
+        renderActivity(actCopyPaths, "copyPaths", "%s copied");
+        renderActivity(actCopyPath, "copyPath", "%s MiB", "%.1f", MiB);
+        renderActivity(actFileTransfer, "fileTransfer", "%s MiB DL", "%.1f", MiB);
+        renderActivity(actBuilds, "builds", "%s built");
+        renderActivity(actOptimiseStore, "optimiseStore", "%s paths optimised");
+        renderActivity(actVerifyPaths, "verifyPaths", "%s paths verified");
+
+        status["corruptedPaths"] = state.corruptedPaths;
+        status["untrustedPaths"] = state.untrustedPaths;
+        status["bytesLinked"] = state.bytesLinked;
+        status["filesLinked"] = state.filesLinked;
+
+        return status;
     }
 
     std::string getStatus(State & state)
