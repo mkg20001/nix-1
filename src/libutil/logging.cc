@@ -88,6 +88,18 @@ void writeToStderr(const string & s)
     }
 }
 
+void writeToAlien(const string & s)
+{
+    try {
+        writeFull(3, s, false);
+    } catch (SysError & e) {
+        /* Ignore failing writes to stderr.  We need to ignore write
+           errors to ensure that cleanup code that logs to stderr runs
+           to completion if the other side of stderr has been closed
+           unexpectedly. */
+    }
+}
+
 Logger * makeDefaultLogger()
 {
     return new SimpleLogger();
