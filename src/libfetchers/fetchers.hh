@@ -157,4 +157,11 @@ std::pair<Tree, time_t> downloadTarball(
     bool immutable,
     const Headers & headers = {});
 
+std::tuple<Tree, time_t, std::string> downloadTarballExtended(
+        ref<Store> store,
+        const std::string & url,
+        const std::string & name,
+        bool immutable,
+        const Headers & headers = {});
+
 }

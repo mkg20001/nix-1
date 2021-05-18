@@ -110,6 +110,21 @@ DownloadFileResult downloadFile(
 }
 
 std::pair<Tree, time_t> downloadTarball(
+        ref<Store> store,
+        const std::string & url,
+        const std::string & name,
+        bool immutable,
+        const Headers & headers)
+{
+    auto [tree, lastModified, effectiveUrl] = downloadTarballExtended(store, url, name, immutable, headers);
+
+    return {
+        tree,
+        lastModified
+    };
+}
+
+std::tuple<Tree, time_t, std::string> downloadTarballExtended(
     ref<Store> store,
     const std::string & url,
     const std::string & name,
@@ -127,7 +142,8 @@ std::pair<Tree, time_t> downloadTarball(
     if (cached && !cached->expired)
         return {
             Tree(store->toRealPath(cached->storePath), std::move(cached->storePath)),
-            getIntAttr(cached->infoAttrs, "lastModified")
+            getIntAttr(cached->infoAttrs, "lastModified"),
+            getStrAttr(cached->infoAttrs, "url")
         };
 
     auto res = downloadFile(store, url, name, immutable, headers);
@@ -153,6 +169,7 @@ std::pair<Tree, time_t> downloadTarball(
     Attrs infoAttrs({
         {"lastModified", uint64_t(lastModified)},
         {"etag", res.etag},
+        {"url", res.effectiveUrl}
     });
 
     getCache()->add(
@@ -165,6 +182,7 @@ std::pair<Tree, time_t> downloadTarball(
     return {
         Tree(store->toRealPath(*unpackedStorePath), std::move(*unpackedStorePath)),
         lastModified,
+        res.effectiveUrl
     };
 }
 
@@ -225,9 +243,14 @@ struct TarballInputScheme : InputScheme
         return true;
     }
 
-    std::pair<Tree, Input> fetch(ref<Store> store, const Input & input) override
+    std::pair<Tree, Input> fetch(ref<Store> store, const Input & _input) override
     {
-        auto tree = downloadTarball(store, getStrAttr(input.attrs, "url"), input.getName(), false).first;
+        Input input(_input);
+
+        auto [tree, lastModified, effectiveUrl] = downloadTarballExtended(store, getStrAttr(input.attrs, "url"), input.getName(), false);
+
+        input.attrs.insert_or_assign("url", effectiveUrl);
+
         return {std::move(tree), input};
     }
 };
