@@ -114,6 +114,7 @@
             boost
             lowdown-nix
             gtest
+            jemalloc
           ]
           ++ lib.optionals stdenv.isLinux [libseccomp]
           ++ lib.optional (stdenv.isLinux || stdenv.isDarwin) libsodium

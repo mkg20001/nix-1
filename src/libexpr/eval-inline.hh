@@ -82,15 +82,15 @@ inline void EvalState::forceList(Value & v, const Pos & pos)
         throwTypeError(pos, "value is %1% while a list was expected", v);
 }
 
+#include<jemalloc/jemalloc.h>
+
 /* Note: Various places expect the allocated memory to be zeroed. */
 inline void * allocBytes(size_t n)
 {
     void * p;
-#if HAVE_BOEHMGC
-    p = GC_MALLOC(n);
-#else
-    p = calloc(n, 1);
-#endif
+
+    p = mallocx(n, MALLOCX_ZERO);
+
     if (!p) throw std::bad_alloc();
     return p;
 }

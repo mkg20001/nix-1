@@ -194,6 +194,10 @@ PKG_CHECK_MODULES([SODIUM], [libsodium], [CXXFLAGS="$SODIUM_CFLAGS $CXXFLAGS"])
 # Look for libbrotli{enc,dec}.
 PKG_CHECK_MODULES([LIBBROTLI], [libbrotlienc libbrotlidec], [CXXFLAGS="$LIBBROTLI_CFLAGS $CXXFLAGS"])
 
+# jemalloc
+PKG_CHECK_MODULES([JEMALLOC], [jemalloc], [CXXFLAGS="$JEMALLOC_CFLAGS $CXXFLAGS"])
+LDFLAGS="-ljemalloc $LDFLAGS"
+
 # Look for libcpuid.
 have_libcpuid=
 if test "$machine_name" = "x86_64"; then
